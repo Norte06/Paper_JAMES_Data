@@ -24,7 +24,7 @@ begin
 
   Ph = fspan(1000.,600.,41)
 
-  Nt = 42
+  Nt = 37
   j  = 0
   L1 = 32
   step = 1
@@ -100,7 +100,7 @@ begin
 ;************************************************
   imgName = "img/OWA-OA.MYNN_ETH_Time-profile-center"
   wks_type                   = "png"
-  wks_type@wkHeight          = 640
+  wks_type@wkHeight          = 800
   wks_type@wkWidth           = 960
   wks = gsn_open_wks(wks_type, imgName)
   gsn_define_colormap(wks,"temp_diff_18lev")
@@ -109,13 +109,13 @@ begin
   res@tiMainString           = "AWO-AO: Temperature Profile (MYNN,GLS)"
   res@tiMainFontHeightF      = 0.017
   res@tiMainOffsetYF         = -0.01
-  res@vpWidthF               = 0.4
+  res@vpWidthF               = 0.45
   res@vpHeightF              = 0.6
   res@gsnMaximize            = True
   res@gsnAddCyclic           = False
   res@trYReverse             = True
   res@trXMinF                = 0.
-  res@trXMaxF                = 42.
+  res@trXMaxF                = 36.
   res@trYMinF                = 600.
   res@trYMaxF                = 1000.
   res@gsnCenterStringFontHeightF    = 0.014
@@ -125,13 +125,13 @@ begin
   res@tmYMajorGrid           = True
   res@tmXMajorGridThicknessF = 1.0
   res@tmYMajorGridThicknessF = 1.0
+  res@tmXBMode               = "Manual"
+  res@tmXBTickStartF         = 0
+  res@tmXBTickEndF           = 36
+  res@tmXBTickSpacingF       = 12
   res@gsnCenterString        = "Around Center"
   res@tiXAxisString          = "hours since 2018-01-04 0:00"
   res@tiYAxisString          = "Pressure[hPa]"
-  res@tmXBMode               = "Manual"
-  res@tmXBTickStartF         = 0
-  res@tmXBTickEndF           = 30
-  res@tmXBTickSpacingF       = 6
   res@tiXAxisFontHeightF     = 0.016
   res@tiYAxisFontHeightF     = 0.017
   res@tiXAxisOffsetYF        = 0.15

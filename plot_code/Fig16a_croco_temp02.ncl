@@ -4,68 +4,60 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 ;************************************************
 begin
-  Dir1  = "./outputs_cpl_ow.gls/"
-  Dir2  = "./outputs_frc_croco.gls/"
-  FILES1  = systemfunc (" ls -1 " + Dir1 + "croco_his.0???.nc")
-  FILES2  = systemfunc (" ls -1 " + Dir2 + "croco_his.0???.nc")
-  numFILES = dimsizes(FILES1)
-  in_CFSR  = addfile("prmsl.gdas.201801.grb","r")
+  Dir   = "./outputs_cpl_owa.gls/"
+  FILES  = systemfunc (" ls -1 " + Dir + "croco_his.0???.nc")
+  numFILES = dimsizes(FILES)
+  fName_wrf = Dir + "wrfout_d01_2018-01-05_00:00:00_crocogrid.nc"
+  in_wrf = addfile(fName_wrf, "r")
+  ifilA = 4
 
-  fName = Dir1 + "croco_his.0000.nc"
-  in = addfile(fName, "r")
+  fName1 = Dir + "croco_his.0000.nc"
+  in1 = addfile(fName1, "r")
 
-  dims = getfiledimsizes(in)
-  lat_rho = in->lat_rho(:,0)
-  lon_rho = in->lon_rho(0,:)
-  s_rho   = in->s_rho
+  dims = getfiledimsizes(in1)
+  lat_rho = in1->lat_rho(:,0)
+  lon_rho = in1->lon_rho(0,:)
+  s_rho   = in1->s_rho
 
 ;************************************************
 ;  File Loop
 ;************************************************
   j = 0
   ; do ifil = 0, numFILES-1, 1
-  do ifil = 3, 4, 1
-    fName1 = FILES1(ifil)
-    fName2 = FILES2(ifil)
-    in1 = addfile(fName1, "r")
+  do ifil = ifilA, ifilA, 1
+    fName2 = FILES(ifil)
     in2 = addfile(fName2, "r")
   
-    time := in1->time
+    time := in2->time
       time@units = "seconds since 2010-01-01 00:00:00"
+    T    := in2->temp
     
     date = cd_calendar(time, -3)
-    s    = 44
-    do i=0, dims(7)-1, 2                 ; ***** Begin Data Loop *****
+    s    = 31
+    do i=0, dims(7)-1, 1                 ; ***** Begin Data Loop *****
       itime = date(i)
-      iAKv1 := in1->AKv(i,s,:,:)
-        iAKv1&eta_rho = lat_rho
-        iAKv1&xi_rho  = lon_rho
-      iAKv2 := in2->AKv(i,s,:,:)
-      AKv_diff = iAKv1 - iAKv2
-        copy_VarCoords(iAKv1, AKv_diff)
-        copy_VarAtts(iAKv1, AKv_diff)
-        AKv_diff@long_name = "Eddy viscosity difference"
-        AKv_diff@units = "m~S~2~N~/s"
+      iT := T(i,s,:,:)
+        iT&eta_rho = lat_rho
+        iT&xi_rho  = lon_rho
 
-      ic  = ifil * 4 + i/2
-      icf = mod(i,2) * 3
-      iMSLP = in_CFSR->PRMSL_GDS0_MSL(ic,icf,:,:)
-        iMSLP = iMSLP / 100.
+      iMSLP := in_wrf->MSLP(j,:,:)
+        copy_VarCoords(iT, iMSLP)
+        iMSLP@long_name = "Sea Level Pressure"
+        iMSLP@unist = "hPa"
 
 ;************************************************
 ; create default plot
 ;************************************************
-      imgName = "img/OW-O.GLS_AKv_" + itime
+      imgName = "img/OWA.MYNN.GLS_SST_" + itime
       wks_type                   = "png"
       wks_type@wkHeight          = 960
       wks_type@wkWidth           = 960
       wks = gsn_open_wks(wks_type, imgName)
-      gsn_define_colormap(wks,"MPL_PuOr")
-      gsn_reverse_colormap(wks)
+      gsn_define_colormap(wks,"BlueWhiteOrangeRed")
 
       res                        = True
-      res@tiMainString           = "WO-O: Eddy viscosity (GLS)"
-      res@tiMainFontHeightF      = 0.018
+      res@tiMainString           = "SST (AWO,MYNN,GLS)"
+      res@tiMainFontHeightF      = 0.016
       res@mpDataBaseVersion      = "MediumRes"
       res@mpProjection           = "LambertConformal"
       res@mpLimitMode            = "Corners"
@@ -77,18 +69,16 @@ begin
       res@mpLambertParallel2F    = 45.
       res@mpLambertMeridianF     = 295.
       res@pmTickMarkDisplayMode  = "Always"
-      res@tmXTOn                 = False
-      res@tmYROn                 = False
-
+      
       res@mpGridAndLimbOn        = True
       res@gsnCenterString        = itime
       res@mpShapeMode            = "FreeAspect"
       res@vpWidthF               = 0.6
       res@vpHeightF              = 0.5
       res@gsnAddCyclic           = False
-      res@tiMainOffsetYF         = -0.0
+      res@tiMainOffsetYF         = -0.01
       res@mpGeophysicalLineThicknessF   = 3.0
-      res@gsnCenterStringFontHeightF    = 0.016
+      res@gsnCenterStringFontHeightF    = 0.014
       res@gsnCenterStringOrthogonalPosF = 0.018
     
 ;------------- For Temperature -----------------
@@ -101,32 +91,32 @@ begin
       opts1@cnLinesOn             = False
       opts1@gsnMaximize           = True
       opts1@gsnSpreadColors       = True
-      opts1@tmXBLabelFontHeightF  = 0.012
-      opts1@tmYLLabelFontHeightF  = 0.012
-      opts1@pmLabelBarHeightF     = 0.08
-      opts1@pmLabelBarWidthF      = 0.5
+      opts1@tmXBLabelFontHeightF  = 0.01
+      opts1@tmYLLabelFontHeightF  = 0.01
+      opts1@pmLabelBarHeightF     = 0.06
+      opts1@pmLabelBarWidthF      = 0.46
       opts1@cnLevelSelectionMode  = "ManualLevels"
-      opts1@cnLevelSpacingF       = 0.05
-      opts1@cnMaxLevelValF        = 0.5
-      opts1@cnMinLevelValF        = -0.5
+      opts1@cnLevelSpacingF       = 0.5
+      opts1@cnMaxLevelValF        = 27.0
+      opts1@cnMinLevelValF        = 1.0
       opts1@pmLabelBarParallelPosF   = 0.5
-      opts1@pmLabelBarOrthogonalPosF = 0.04
-      opts1@lbLabelFontHeightF       = 0.013
-      opts1@lbLabelStride            = 5
-      opts1@lbTitleString            = AKv_diff@long_name + " [" + AKv_diff@units + "]"
-      opts1@lbTitleFontHeightF       = 0.015
+      opts1@pmLabelBarOrthogonalPosF = 0.06
+      opts1@lbLabelFontHeightF       = 0.01
+      opts1@lbLabelStride            = 8
+      opts1@lbTitleString            = iT@long_name + " [" + iT@units + "]"
+      opts1@lbTitleFontHeightF       = 0.012
       opts1@lbBoxSeparatorLinesOn    = False
     
 ;------------- For Pressure -----------------
       opts2                       = True
       opts2@gsnDraw               = False
       opts2@gsnFrame              = False
-      opts2@gsnRightString        = ""
-      opts2@gsnLeftString         = ""
       opts2@cnFillOn              = False
       opts2@cnLinesOn             = True
-      opts2@cnLineColor           = "black"
-      opts2@cnLineThicknessF      = 3.0
+      opts2@gsnRightString        = ""
+      opts2@gsnLeftString         = ""
+      opts2@cnLineColor           = "darkgreen"
+      opts2@cnLineThicknessF      = 2.0
       opts2@cnLevelSelectionMode  = "ManualLevels"
       opts2@cnLevelSpacingF       = 4.0
       ; opts2@cnMaxLevelValF        = 1020.0
@@ -140,7 +130,7 @@ begin
       opts2@cnLowLabelBackgroundColor     = -1
       opts2@cnLowLabelFontHeightF         = 0.012
 
-      plot    = gsn_csm_contour_map(wks,AKv_diff,opts1)
+      plot    = gsn_csm_contour_map(wks,iT,opts1)
       plot2   = gsn_csm_contour(wks,iMSLP,opts2)
       overlay(plot,plot2)
 

@@ -4,20 +4,27 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 ;************************************************
 begin
-  Dir1  = "./outputs_cpl_ow.gls/"
-  Dir2  = "./outputs_frc_croco.gls/"
+  Dir1  = "./outputs_cpl_owa.gls/"
+  Dir2  = "./outputs_cpl_oa.gls/"
   fName1 = Dir1 + "croco_density.nc"
   fName2 = Dir2 + "croco_density.nc"
   in1 = addfile(fName1, "w")
   in2 = addfile(fName2, "w")
-  in_CFSR = addfile("prmsl.gdas.201801.grb","r")
+
+  fName_wrf = Dir1 + "wrfout_d01_2018-01-05_00:00:00_crocogrid.nc"
+  in_wrf = addfile(fName_wrf, "r")
+  ifilA = 4
   
   dims = getfiledimsizes(in1)
   depth = in1->depth
   lat_rho = in1->lat_rho
   lon_rho = in1->lon_rho
 
-  do i=0, dims(0)-1, 2                 ; ***** Begin Data Loop *****
+  j = 0
+  is = (ifilA - 3) * 8
+  ie = (ifilA - 3) * 8 + 7
+  id = 2
+  do i = is, ie, id                 ; ***** Begin Data Loop *****
     time  := in1->time(i)
     itime  = cd_calendar(time, -3)
     mld1  := in1->mld(i,:,:)
@@ -29,15 +36,16 @@ begin
       mld_diff@long_name = "MLD Difference"
       mld_diff@units = "m"
     
-    ic  = 12 + i/2
-    icf = mod(i,2) * 3
-    iMSLP = in_CFSR->PRMSL_GDS0_MSL(ic,icf,:,:)
-      iMSLP = iMSLP / 100.
+    iMSLP := in_wrf->MSLP(j,:,:)
+      copy_VarCoords(mld1, iMSLP)
+      copy_VarMeta(mld1, iMSLP)
+      iMSLP@long_name = "Sea Level Pressure"
+      iMSLP@unist = "hPa"
 
 ;************************************************
 ; create default plot
 ;************************************************
-    imgName = "img/OW-O.GLS_MLD_" + itime
+    imgName = "img/OWA-OA.MYNN.GLS_MLD_" + itime
     wks_type                   = "png"
     wks_type@wkHeight          = 960
     wks_type@wkWidth           = 960
@@ -46,7 +54,7 @@ begin
     gsn_reverse_colormap(wks)
 
     res                        = True
-    res@tiMainString           = "WO-O: Mixed Layer Depth (GLS)"
+    res@tiMainString           = "AWO-AO: Mixed Layer Depth (MYNN,GLS)"
     res@tiMainFontHeightF      = 0.018
     res@mpDataBaseVersion      = "MediumRes"
     res@mpProjection           = "LambertConformal"
@@ -69,7 +77,7 @@ begin
     res@vpHeightF              = 0.5
     res@gsnAddCyclic           = False
     res@tiMainOffsetYF         = -0.01
-    res@mpGeophysicalLineThicknessF   = 3.0
+    res@mpGeophysicalLineThicknessF   = 2.5
     res@gsnCenterStringFontHeightF    = 0.016
     res@gsnCenterStringOrthogonalPosF = 0.018
   
@@ -85,14 +93,14 @@ begin
     opts1@gsnSpreadColors       = True
     opts1@tmXBLabelFontHeightF  = 0.012
     opts1@tmYLLabelFontHeightF  = 0.012
-    opts1@pmLabelBarHeightF     = 0.08
+    opts1@pmLabelBarHeightF     = 0.06
     opts1@pmLabelBarWidthF      = 0.46
     opts1@cnLevelSelectionMode  = "ManualLevels"
     opts1@cnLevelSpacingF       = 8.0
     opts1@cnMaxLevelValF        = 32.0
     opts1@cnMinLevelValF        = -32.0
     opts1@pmLabelBarParallelPosF   = 0.5
-    opts1@pmLabelBarOrthogonalPosF = 0.04
+    opts1@pmLabelBarOrthogonalPosF = 0.06
     opts1@lbLabelFontHeightF       = 0.013
     opts1@lbLabelStride            = 2
     opts1@lbTitleString            = mld_diff@long_name + " [" + mld_diff@units + "]"
@@ -129,6 +137,7 @@ begin
     print("i=" + i + "; time: UTC " + itime)
     draw(plot)
     frame(wks)
+    j = j + id
 
   end do
   

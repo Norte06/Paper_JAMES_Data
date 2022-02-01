@@ -19,6 +19,7 @@ begin
 
   Ph = fspan(1000.,600.,41)
 
+  Nc = 37
   j  = 0
   L1 = 32
   step = 1
@@ -70,7 +71,7 @@ begin
 ;************************************************
   imgName = "img/OWA.MYNN.GLS_ETH_Time-profile-center"
   wks_type                   = "png"
-  wks_type@wkHeight          = 640
+  wks_type@wkHeight          = 800
   wks_type@wkWidth           = 960
   wks = gsn_open_wks(wks_type, imgName)
   gsn_define_colormap(wks,"NCV_jet")
@@ -79,13 +80,13 @@ begin
   res@tiMainString           = "Temperature Profile (AWO,MYNN,GLS)"
   res@tiMainFontHeightF      = 0.017
   res@tiMainOffsetYF         = -0.01
-  res@vpWidthF               = 0.4
+  res@vpWidthF               = 0.45
   res@vpHeightF              = 0.6
   res@gsnMaximize            = True
   res@gsnAddCyclic           = False
   res@trYReverse             = True
   res@trXMinF                = 0.
-  res@trXMaxF                = 42.
+  res@trXMaxF                = 36.
   res@trYMinF                = 600.
   res@trYMaxF                = 1000.
   res@gsnCenterStringFontHeightF    = 0.014
@@ -95,10 +96,14 @@ begin
   res@tmYMajorGrid           = True
   res@tmXMajorGridThicknessF = 1.0
   res@tmYMajorGridThicknessF = 1.0
+  res@tmXBMode               = "Manual"
+  res@tmXBTickStartF         = 0
+  res@tmXBTickEndF           = 36
+  res@tmXBTickSpacingF       = 12
   res@gsnCenterString        = "Around Center"
   res@tiXAxisString          = "hours since 2018-01-04 00:00"
   res@tiYAxisString          = "Pressure[hPa]"
-  res@tiXAxisFontHeightF     = 0.016
+  res@tiXAxisFontHeightF     = 0.017
   res@tiYAxisFontHeightF     = 0.017
   res@tiXAxisOffsetYF        = 0.15
   res@tmXBLabelFontHeightF   = 0.015
@@ -121,7 +126,7 @@ begin
   opts1@cnLevelSelectionMode  = "ManualLevels"
   opts1@cnLevelSpacingF       = 2.0
   opts1@cnMaxLevelValF        = 320.0
-  opts1@cnMinLevelValF        = 280.0
+  opts1@cnMinLevelValF        = 290.0
   opts1@pmLabelBarParallelPosF   = 0.5
   opts1@pmLabelBarOrthogonalPosF = 0.1
   opts1@lbLabelFontHeightF       = 0.015

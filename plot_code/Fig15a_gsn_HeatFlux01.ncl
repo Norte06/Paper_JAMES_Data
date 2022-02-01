@@ -4,74 +4,56 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/wrf/WRFUserARW.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/wrf/WRF_contributed.ncl"
 ;************************************************
 begin
-  Dir1  = "./outputs_cpl_aw/"
-  FILES1 = systemfunc (" ls -1 " + Dir1 + "wrfout_d01_2018-01-*00 ")
-  ; Dir2  = "./outputs_cpl_oa.gls/"
-  Dir2 = "./outputs_frc_wrf/"
-  FILES2 = systemfunc (" ls -1 " + Dir2 + "wrfout_d01_2018-01-*00 ")
-  numFILES = dimsizes(FILES1)
+  Dir   = "./outputs_cpl_owa.gls/"
+  ; Dir   = "./outputs_frc_wrf/"
+  FILES = systemfunc (" ls -1 " + Dir + "wrfout_d01_2018-01-*00 ")
+  numFILES = dimsizes(FILES)
 
 ;************************************************
 ;  File Loop
 ;************************************************
   do ifil = 3, 4, 1
   ; do ifil = 1, numFILES-1, 1
-    fName1 = FILES1(ifil)+".nc"
-    fName2 = FILES2(ifil)+".nc"
-    in1 = addfile(fName1,"r")
-    in2 = addfile(fName2,"r")
+    fName = FILES(ifil)+".nc"
+    in = addfile(fName,"r")
 
-    dims = getfiledimsizes(in1)
-    lat  = in1->XLAT(0,:,0)
-    lon  = in1->XLONG(0,0,:)
-    lev  = wrf_user_getvar(in1,"pressure",0)
-    time = wrf_user_getvar(in1,"times",-1)
-    TimeChar := in1->Times
+    dims = getfiledimsizes(in)
+    lat  = in->XLAT(0,:,0)
+    lon  = in->XLONG(0,0,:)
+    lev  = wrf_user_getvar(in,"pressure",0)
+    time = wrf_user_getvar(in,"times",-1)
+    TimeChar := in->Times
     timestr  := wrf_times_c(TimeChar,3)
-  
+
 ;************************************************
 ; Date Loop
 ;************************************************
-    do i=0, dims(0)-1, 6
-      MSLP = (/ wrf_user_getvar(in1,"slp",i) /)
+    do i=0, dims(0)-1, 3
+      MSLP = (/ wrf_user_getvar(in,"slp",i) /)
         MSLP!0 = "lat"
         MSLP!1 = "lon"
         MSLP&lat  = lat
         MSLP&lon  = lon
-      Ck1  = in1->CK(i,:,:)
-      Ck2  = in2->CK(i,:,:)
-        var_size = dimsizes(Ck1)
-
-      Ck_diff = (Ck1 - Ck2) * 1000.
-
-      XLAND := ndtooned(in1->XLAND(i,:,:))
-      Ck_diff1D := ndtooned(Ck_diff)
-      chk := ind(XLAND .lt. 1.5)
-      if (.not. any(ismissing(chk))) then
-        do k=0, dimsizes(chk)-1, 1
-          Ck_diff1D(chk(k)) = 0.0
-        end do
-      end if
-
-      Ck_diff = onedtond(Ck_diff1D, var_size)
-        copy_VarCoords(MSLP, Ck_diff)
-        copy_VarAtts(MSLP, Ck_diff)
-        Ck_diff@long_name = "Ck Diff"
-        Ck_diff@units = "10~S~-3~N~"
-
+      LH   = in->LH(i,:,:)
+      SH   = in->HFX(i,:,:)
+      Heat := LH
+        Heat = LH + SH
+        copy_VarCoords(MSLP, Heat)
+        Heat@long_name = "Total Heat Flux"
+        Heat@units = "W/m~S~2~N~"
+    
 ;************************************************
 ; create default plot
 ;************************************************
-      imgName = "img/AW-A.MYNN_Ck_" + timestr(i)
+      imgName = "img/OWA.MYNN.GLS_Heat2_" + timestr(i)
       wks_type                   = "png"
       wks_type@wkHeight          = 960
       wks_type@wkWidth           = 960
       wks = gsn_open_wks(wks_type, imgName)
-      gsn_define_colormap(wks,"nrl_sirkes")
-      ; gsn_reverse_colormap(wks)
+      gsn_define_colormap(wks,"WhiteBlueGreenYellowRed")
 
       res                        = True
-      res@tiMainString           = "AW-A: Ck Difference (MYNN)"
+      res@tiMainString           = "Surface Heat Flux (AWO,MYNN,GLS)"
       res@tiMainFontHeightF      = 0.018
       res@mpDataBaseVersion      = "MediumRes"
       res@mpProjection           = "LambertConformal"
@@ -111,16 +93,16 @@ begin
       opts1@tmXBLabelFontHeightF  = 0.012
       opts1@tmYLLabelFontHeightF  = 0.012
       opts1@pmLabelBarHeightF     = 0.08
-      opts1@pmLabelBarWidthF      = 0.4
+      opts1@pmLabelBarWidthF      = 0.5
       opts1@cnLevelSelectionMode  = "ManualLevels"
-      opts1@cnLevelSpacingF       = 0.05
-      opts1@cnMaxLevelValF        = 0.5
-      opts1@cnMinLevelValF        = -0.5
+      opts1@cnLevelSpacingF       = 40.
+      opts1@cnMaxLevelValF        = 1600.0
+      opts1@cnMinLevelValF        = 0.0
       opts1@pmLabelBarParallelPosF   = 0.5
-      opts1@pmLabelBarOrthogonalPosF = -0.0
+      opts1@pmLabelBarOrthogonalPosF = 0.04
       opts1@lbLabelFontHeightF       = 0.013
       opts1@lbLabelStride            = 5
-      opts1@lbTitleString            = Ck_diff@long_name + " [" + Ck_diff@units + "]"
+      opts1@lbTitleString            = Heat@long_name + " [" + Heat@units + "]"
       opts1@lbTitleFontHeightF       = 0.015
       opts1@lbBoxSeparatorLinesOn    = False
     
@@ -147,7 +129,7 @@ begin
       opts2@cnLowLabelBackgroundColor     = -1
       opts2@cnLowLabelFontHeightF         = 0.012
       
-      plot    = gsn_csm_contour_map(wks,Ck_diff,opts1)
+      plot    = gsn_csm_contour_map(wks,Heat,opts1)
       plot2   = gsn_csm_contour(wks,MSLP,opts2)
       overlay(plot,plot2)
 
